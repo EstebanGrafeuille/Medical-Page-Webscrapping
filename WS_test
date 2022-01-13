@@ -1,0 +1,49 @@
+import requests
+from bs4 import BeautifulSoup
+import csv
+import time
+
+f = open("medCip2.csv","w")
+writer = csv.writer(f)
+writer.writerow(["name:","cip:"])
+load_array = []
+
+l_url = "https://www.vidal.fr/medicaments/gammes/liste-0-9.html"   #start
+L_page = requests.get(l_url)
+
+L_soup = BeautifulSoup(L_page.content, "html.parser")
+l_results = L_soup.find("div", class_ = "site-container block")
+link_list = l_results.find_all("a")
+
+
+
+for link in link_list:
+    
+    url = "https://www.vidal.fr/" + link["href"]
+    page = requests.get(url)
+
+
+    soup = BeautifulSoup(page.content,"html.parser")
+    med_list = soup.find("div",class_ = "list")
+    medicine_link = med_list.find_all("a")      "find each medicament link"
+    for med_link in medicine_link:
+        med_page = requests.get("https://www.vidal.fr/" + med_link["href"])
+        #print("2 https://www.vidal.fr/" + med_link["href"])
+        med_soup = BeautifulSoup(med_page.content,"html.parser")  #im in gamme de medicaments
+        product_list = med_soup.find_all("div",class_ = "consume-info")
+        for i in range(0,len(product_list)):
+            prod_element = product_list[i]
+            prod_links = prod_element.find_all("a")
+            for prod_link in prod_links:
+                prod_url = prod_link["href"]    
+                Product_page = requests.get("https://www.vidal.fr/" + prod_link["href"])
+            
+                #print("3 = https://www.vidal.fr/" + prod_link["href"])
+                P_soup = BeautifulSoup(Product_page.content,"html.parser")
+                time.sleep(1)
+                P_results = P_soup.find("div",class_ = "description")
+                p_name = P_results.find("div",class_ = "name")
+                p_cip = P_results.find("span")
+                print(p_name.text +  " cip: " + p_cip.text)
+                writer.writerow([p_name.text,p_cip.text])  #saves the collected data
+print("csv written")
